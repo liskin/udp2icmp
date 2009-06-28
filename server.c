@@ -30,13 +30,15 @@ int init_udp_socket(unsigned short port)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
-        fprintf(stderr, "./server port key\n"), abort();
+    if (argc != 4)
+        fprintf(stderr, "./server port addr key\n"), abort();
 
     int port = atoi(argv[1]);
-    int key = atoi(argv[2]);
+    struct sockaddr_in host; resolv(argv[2], &host);
+    int key = atoi(argv[3]);
 
     int sock = init_ping_socket();
+    bind_ping_socket(sock, &host);
     int udpsock = init_udp_socket(port);
 
     struct sockaddr_in lastaddr;

@@ -14,6 +14,18 @@
 #include "checksum.h"
 #include "ping.h"
 
+void resolv(const char *host, struct sockaddr_in* addr)
+{
+    struct hostent *he;
+
+    if ((he = gethostbyname(host)) == NULL)
+        fprintf(stderr, "gethostbyname: %s\n", hstrerror(h_errno)), abort();
+
+    addr->sin_family = AF_INET;
+    addr->sin_port = 0;
+    memcpy(&addr->sin_addr, he->h_addr, he->h_length);
+}
+
 int init_ping_socket(void)
 {
     int sock;
@@ -25,6 +37,13 @@ int init_ping_socket(void)
     setsockopt(sock, SOL_IP, IP_TTL, (const char *)&ttl, sizeof(ttl));
 
     return sock;
+}
+
+void bind_ping_socket(int sock, struct sockaddr_in *addr)
+{
+    if (bind(sock, (const struct sockaddr *) addr,
+                sizeof(struct sockaddr_in)) == -1)
+        perror("bind"), abort();
 }
 
 void send_ping(int sock, struct sockaddr_in *addr,

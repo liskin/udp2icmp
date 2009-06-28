@@ -6,7 +6,6 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
 #include <errno.h>
@@ -27,18 +26,6 @@ int init_udp_socket(unsigned short port)
         perror("bind"), abort();
 
     return sock;
-}
-
-void resolv(const char *host, struct sockaddr_in* addr)
-{
-    struct hostent *he;
-
-    if ((he = gethostbyname(host)) == NULL)
-        fprintf(stderr, "gethostbyname: %s\n", hstrerror(h_errno)), abort();
-
-    addr->sin_family = AF_INET;
-    addr->sin_port = 0;
-    memcpy(&addr->sin_addr, he->h_addr, he->h_length);
 }
 
 int main(int argc, char *argv[])
