@@ -1,9 +1,8 @@
 /* 
- * Relay Network monitor
- * vim:set sw=4 sta:
+ * simple ICMP tunnel
+ * vim:set sw=4 sta et:
  *
- * Copyright (C) 2003  Tomas Janousek <tomi@nomi.cz>
- * See file COPYRIGHT and COPYING
+ * Copyright (C) 2009  Tomas Janousek <tomi@nomi.cz>
  */
 #ifndef PING_H_INCLUDED
 #define PING_H_INCLUDED
@@ -18,8 +17,8 @@
 
 int init_ping_socket(void);
 void send_ping(int sock, struct sockaddr_in *addr,
-	u_int16_t id, u_int16_t seq, char *data, size_t len);
+        u_int16_t id, u_int16_t seq, char *data, size_t len);
 int recv_ping(int sock, struct sockaddr_in* addr,
-	u_int16_t *id, u_int16_t *seq, char** data, ssize_t *len);
+        u_int16_t *id, u_int16_t *seq, char** data, ssize_t *len);
 
 #endif /* PING_H_INCLUDED */

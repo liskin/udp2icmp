@@ -1,9 +1,8 @@
 /* 
- * Relay Network monitor
- * vim:set sw=4 sta:
+ * simple ICMP tunnel
+ * vim:set sw=4 sta et:
  *
- * Copyright (C) 2003  Tomas Janousek <tomi@nomi.cz>
- * See file COPYRIGHT and COPYING
+ * Copyright (C) 2009  Tomas Janousek <tomi@nomi.cz>
  */
 #ifndef CHECKSUM_H_INCLUDED
 #define CHECKSUM_H_INCLUDED
