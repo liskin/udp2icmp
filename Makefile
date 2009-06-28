@@ -1,10 +1,13 @@
 CFLAGS=-Wall -g
-sources = main.c ping.c checksum.c
+sources = ping.c checksum.c
 
-main: $(sources:.c=.o)
+all: server client
+server: server.o $(sources:.c=.o)
+client: client.o $(sources:.c=.o)
 
 # deps:
-include $(sources:.c=.d)
+allsrc = $(wildcard *.c)
+include $(allsrc:.c=.d)
 %.d: %.c
 	@set -e; rm -f $@; \
 	$(CC) -M $(CPPFLAGS) $< > $@.$$$$; \

@@ -28,18 +28,6 @@ int init_ping_socket(void)
     return sock;
 }
 
-void resolv(const char *host, struct sockaddr_in* addr)
-{
-    struct hostent *he;
-
-    if ((he = gethostbyname(host)) == NULL)
-	fprintf(stderr, "gethostbyname: %s\n", hstrerror(h_errno)), abort();
-
-    addr->sin_family = AF_INET;
-    addr->sin_port = 0;
-    memcpy(&addr->sin_addr, he->h_addr, he->h_length);
-}
-
 void send_ping(int sock, struct sockaddr_in *addr,
 	u_int16_t id, u_int16_t seq, char *data, size_t len)
 {
@@ -47,19 +35,18 @@ void send_ping(int sock, struct sockaddr_in *addr,
 
     p->type = ICMP_ECHO;
     p->code = 0;
-    p->un.echo.id = id;
-    p->un.echo.sequence = seq;
+    p->un.echo.id = htons(id);
+    p->un.echo.sequence = htons(seq);
     p->checksum = 0;
 
     // make some data
-    memcpy(p + sizeof(struct icmphdr), data, len);
+    memcpy(((char *) p) + sizeof(struct icmphdr), data, len);
 
     // checksum it
     p->checksum = checksum((unsigned char*) p, sizeof(struct icmphdr) + len);
 
-    if (TEMP_FAILURE_RETRY(
-	sendto(sock, (char *) p, sizeof(struct icmphdr) + len, 0,
-	    (struct sockaddr *) addr, (socklen_t) sizeof(struct sockaddr_in))) == -1)
+    if (sendto(sock, (char *) p, sizeof(struct icmphdr) + len, 0,
+	    (struct sockaddr *) addr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
 	perror("sendto"), abort();
 }
 
@@ -69,9 +56,8 @@ int recv_ping(int sock, struct sockaddr_in* addr,
     struct iphdr *buffer = (struct iphdr *) alloca(4096);
     socklen_t addrlen = sizeof(struct sockaddr_in);
 
-    if ((*len = TEMP_FAILURE_RETRY(
-	recvfrom(sock, (char*) buffer, sizeof(buffer), 0,
-	    (struct sockaddr *) addr, &addrlen))) == -1)
+    if ((*len = recvfrom(sock, (char*) buffer, 4096, 0,
+	    (struct sockaddr *) addr, &addrlen)) == -1)
 	perror("recvfrom"), abort();
 
     if (*len < sizeof(struct iphdr))
@@ -86,8 +72,8 @@ int recv_ping(int sock, struct sockaddr_in* addr,
     if (p->type != ICMP_ECHO)
 	return 0;
 
-    *id = p->un.echo.id;
-    *seq = p->un.echo.sequence;
+    *id = ntohs(p->un.echo.id);
+    *seq = ntohs(p->un.echo.sequence);
 
     *data = (char *) malloc(*len);
     if (!*data)
