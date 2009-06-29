@@ -35,22 +35,25 @@ int main(int argc, char *argv[])
 
     int port = atoi(argv[1]);
     struct sockaddr_in host; resolv(argv[2], &host);
-    int key = atoi(argv[3]);
+    long key = atol(argv[3]);
 
     int sock = init_ping_socket();
     int udpsock = init_udp_socket(port);
 
     struct sockaddr_in lastaddr;
-    u_int16_t lastid;
     int lastaddr_valid = 0;
 
+    int nfds;
     fd_set fds;
+    struct timeval tv;
     while (1) {
         FD_ZERO(&fds);
         FD_SET(sock, &fds);
         FD_SET(udpsock, &fds);
+        tv.tv_sec = 0;
+        tv.tv_usec = 100000;
 
-        if (select(udpsock + 1, &fds, NULL, NULL, NULL) == -1)
+        if ((nfds = select(udpsock + 1, &fds, NULL, NULL, &tv)) == -1)
             perror("select"), abort();
 
         if (FD_ISSET(sock, &fds)) {
@@ -63,17 +66,17 @@ int main(int argc, char *argv[])
             if (!recv_ping(sock, &addr, &type, &code, &id, &seq, &data, &len))
                 goto ignore_ping;
 
-            if (type != ICMP_DEST_UNREACH || code != 0)
+            if (type != ICMP_ECHOREPLY || code != 0 || seq != 1)
                 goto ignore_ping;
 
-            if (id != lastid)
+            if (len <= sizeof(long) || ntohl(* (long *) data) != key)
                 goto ignore_ping;
 
             if (!lastaddr_valid)
                 goto ignore_ping;
 
-            if (sendto(udpsock, data, len, 0, (struct sockaddr *) &lastaddr,
-                    sizeof(struct sockaddr_in)) == -1)
+            if (sendto(udpsock, data + sizeof(long), len - sizeof(long), 0,
+                    (struct sockaddr *) &lastaddr, sizeof(struct sockaddr_in)) == -1)
                 perror("sendto"), abort();
 
 ignore_ping:
@@ -81,11 +84,12 @@ ignore_ping:
         }
 
         if (FD_ISSET(udpsock, &fds)) {
-            char buffer[4096];
+            char buffer[4096 + sizeof(long)];
             socklen_t addrlen = sizeof(struct sockaddr_in);
             ssize_t len;
 
-            if ((len = recvfrom(udpsock, buffer, 4096, 0,
+            * (long *) buffer = htonl(key);
+            if ((len = recvfrom(udpsock, buffer + sizeof(long), 4096, 0,
                     (struct sockaddr *) &lastaddr, &addrlen)) == -1) {
                 if (errno == ECONNREFUSED)
                     goto ignore_udp_fail;
@@ -94,12 +98,19 @@ ignore_ping:
 
             u_int16_t x = rand();
             send_ping(sock, &host, ICMP_ECHO, 0,
-                    x, x ^ key, buffer, len);
-            lastid = x;
+                    x, 0, buffer, len + sizeof(long));
 
             lastaddr_valid = 1;
         }
-ignore_udp_fail: continue;
+ignore_udp_fail:
+
+        if (nfds == 0) {
+            long xkey = htonl(key);
+
+            u_int16_t x = rand();
+            send_ping(sock, &host, ICMP_ECHO, 0,
+                    x, 0, (char *) &xkey, sizeof(long));
+        }
     }
 
     return 0;

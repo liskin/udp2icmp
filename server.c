@@ -35,14 +35,14 @@ int main(int argc, char *argv[])
 
     int port = atoi(argv[1]);
     struct sockaddr_in host; resolv(argv[2], &host);
-    int key = atoi(argv[3]);
+    long key = atol(argv[3]);
 
     int sock = init_ping_socket();
     bind_ping_socket(sock, &host);
     int udpsock = init_udp_socket(port);
 
     struct sockaddr_in lastaddr;
-    u_int16_t lastid, lastseq;
+    u_int16_t lastid;
     int lastaddr_valid = 0;
 
     fd_set fds;
@@ -64,37 +64,43 @@ int main(int argc, char *argv[])
             if (!recv_ping(sock, &addr, &type, &code, &id, &seq, &data, &len))
                 goto ignore_ping;
 
-            if (type != ICMP_ECHO || code != 0)
+            if (type != ICMP_ECHO || code != 0 || seq != 0)
                 goto ignore_ping;
 
-            if ((id ^ seq) != key)
+            if (len < sizeof(long) || ntohl(* (long *) data) != key)
                 goto ignore_ping;
-
-            if (write(udpsock, data, len) == -1)
-                perror("write"), abort();
 
             lastaddr = addr;
             lastid = id;
-            lastseq = seq;
             lastaddr_valid = 1;
+
+            if (len == sizeof(long))
+                goto ignore_ping;
+
+            if (write(udpsock, data + sizeof(long), len - sizeof(long)) == -1)
+                perror("write"), abort();
 
 ignore_ping:
             free(data);
         }
 
         if (FD_ISSET(udpsock, &fds)) {
-            char buffer[4096];
+            char buffer[4096 + sizeof(long)];
             ssize_t len;
 
-            if ((len = read(udpsock, buffer, 4096)) == -1) {
+            * (long *) buffer = htonl(key);
+            if ((len = read(udpsock, buffer + sizeof(long), 4096)) == -1) {
                 if (errno == ECONNREFUSED)
                     goto ignore_udp_fail;
                 perror("read"), abort();
             }
 
+            /* firewall:
+             * -A OUTPUT -p icmp -m icmp --icmp-type 0 -m u32 --u32 0x1a&0xffff0000=0x0 -j DROP
+             */
             if (lastaddr_valid) {
-                send_ping(sock, &lastaddr, ICMP_DEST_UNREACH, 0,
-                        lastid, lastseq++, buffer, len);
+                send_ping(sock, &lastaddr, ICMP_ECHOREPLY, 0,
+                        lastid, 1, buffer, len + sizeof(long));
             }
         }
 ignore_udp_fail: continue;
