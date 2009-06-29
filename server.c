@@ -97,7 +97,7 @@ ignore_ping:
             }
 
             /* firewall:
-             * -A OUTPUT -p icmp -s xx.xx.xx.xx -m icmp --icmp-type 0 -m u32 --u32 0x1a&0xffff0000=0x0 -j DROP
+             * -A OUTPUT -p icmp -s xx.xx.xx.xx -m icmp --icmp-type 0 -m ttl --ttl-lt 100 -j DROP
              */
             if (id_pool_r != id_pool_w) {
                 send_ping(sock, &lastaddr, ICMP_ECHOREPLY, 0,
