@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
                 goto ignore_ping;
 
             if (write(udpsock, data + sizeof(long), len - sizeof(long)) == -1)
-                perror("write"), abort();
+                perror("write");
 
 ignore_ping:
             free(data);
@@ -93,9 +93,7 @@ ignore_ping:
 
             * (long *) buffer = htonl(key);
             if ((len = read(udpsock, buffer + sizeof(long), 4096)) == -1) {
-                if (errno == ECONNREFUSED)
-                    goto ignore_udp_fail;
-                perror("read"), abort();
+                perror("read"); goto ignore_udp_fail;
             }
 
             /* firewall:

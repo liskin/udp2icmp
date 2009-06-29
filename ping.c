@@ -65,7 +65,7 @@ void send_ping(int sock, struct sockaddr_in *addr, u_int8_t type, u_int8_t code,
 
     if (sendto(sock, (char *) p, sizeof(struct icmphdr) + len, 0,
             (struct sockaddr *) addr, (socklen_t) sizeof(struct sockaddr_in)) == -1)
-        perror("sendto"), abort();
+        perror("sendto");
 }
 
 int recv_ping(int sock, struct sockaddr_in* addr, u_int8_t *type, u_int8_t *code,
@@ -75,8 +75,9 @@ int recv_ping(int sock, struct sockaddr_in* addr, u_int8_t *type, u_int8_t *code
     socklen_t addrlen = sizeof(struct sockaddr_in);
 
     if ((*len = recvfrom(sock, (char*) buffer, 4096, 0,
-            (struct sockaddr *) addr, &addrlen)) == -1)
-        perror("recvfrom"), abort();
+            (struct sockaddr *) addr, &addrlen)) == -1) {
+        perror("recvfrom"); return 0;
+    }
 
     if (*len < sizeof(struct iphdr))
         return 0;

@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
             if (sendto(udpsock, data + sizeof(long), len - sizeof(long), 0,
                     (struct sockaddr *) &lastaddr, sizeof(struct sockaddr_in)) == -1)
-                perror("sendto"), abort();
+                perror("sendto");
 
 ignore_ping:
             free(data);
@@ -91,9 +91,7 @@ ignore_ping:
             * (long *) buffer = htonl(key);
             if ((len = recvfrom(udpsock, buffer + sizeof(long), 4096, 0,
                     (struct sockaddr *) &lastaddr, &addrlen)) == -1) {
-                if (errno == ECONNREFUSED)
-                    goto ignore_udp_fail;
-                perror("recvfrom"), abort();
+                perror("recvfrom"); goto ignore_udp_fail;
             }
 
             u_int16_t x = rand();
