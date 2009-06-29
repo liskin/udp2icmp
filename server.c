@@ -42,8 +42,9 @@ int main(int argc, char *argv[])
     int udpsock = init_udp_socket(port);
 
     struct sockaddr_in lastaddr;
-    u_int16_t lastid;
-    int lastaddr_valid = 0;
+#define POOLSZ 16
+    u_int16_t id_pool[POOLSZ];
+    int id_pool_r = 0, id_pool_w = 0;
 
     fd_set fds;
     while (1) {
@@ -71,8 +72,10 @@ int main(int argc, char *argv[])
                 goto ignore_ping;
 
             lastaddr = addr;
-            lastid = id;
-            lastaddr_valid = 1;
+            id_pool[id_pool_w] = id;
+            id_pool_w = (id_pool_w + 1) % POOLSZ;
+            if (id_pool_w == id_pool_r)
+                id_pool_r++;
 
             if (len == sizeof(long))
                 goto ignore_ping;
@@ -96,11 +99,12 @@ ignore_ping:
             }
 
             /* firewall:
-             * -A OUTPUT -p icmp -m icmp --icmp-type 0 -m u32 --u32 0x1a&0xffff0000=0x0 -j DROP
+             * -A OUTPUT -p icmp -s xx.xx.xx.xx -m icmp --icmp-type 0 -m u32 --u32 0x1a&0xffff0000=0x0 -j DROP
              */
-            if (lastaddr_valid) {
+            if (id_pool_r != id_pool_w) {
                 send_ping(sock, &lastaddr, ICMP_ECHOREPLY, 0,
-                        lastid, 1, buffer, len + sizeof(long));
+                        id_pool[id_pool_r], 1, buffer, len + sizeof(long));
+                id_pool_r = (id_pool_r + 1) % POOLSZ;
             }
         }
 ignore_udp_fail: continue;
