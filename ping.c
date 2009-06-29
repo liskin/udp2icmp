@@ -46,13 +46,13 @@ void bind_ping_socket(int sock, struct sockaddr_in *addr)
         perror("bind"), abort();
 }
 
-void send_ping(int sock, struct sockaddr_in *addr,
+void send_ping(int sock, struct sockaddr_in *addr, u_int8_t type, u_int8_t code,
         u_int16_t id, u_int16_t seq, char *data, size_t len)
 {
     struct icmphdr *p = (struct icmphdr*) alloca(sizeof(struct icmphdr) + len);
 
-    p->type = ICMP_ECHO;
-    p->code = 0;
+    p->type = type;
+    p->code = code;
     p->un.echo.id = htons(id);
     p->un.echo.sequence = htons(seq);
     p->checksum = 0;
@@ -68,7 +68,7 @@ void send_ping(int sock, struct sockaddr_in *addr,
         perror("sendto"), abort();
 }
 
-int recv_ping(int sock, struct sockaddr_in* addr,
+int recv_ping(int sock, struct sockaddr_in* addr, u_int8_t *type, u_int8_t *code,
         u_int16_t *id, u_int16_t *seq, char** data, ssize_t *len)
 {
     struct iphdr *buffer = (struct iphdr *) alloca(4096);
@@ -87,9 +87,8 @@ int recv_ping(int sock, struct sockaddr_in* addr,
     if (*len <= 0)
         return 0;
 
-    if (p->type != ICMP_ECHO)
-        return 0;
-
+    *type = p->type;
+    *code = p->code;
     *id = ntohs(p->un.echo.id);
     *seq = ntohs(p->un.echo.sequence);
 

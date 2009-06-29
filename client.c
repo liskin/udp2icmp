@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     int udpsock = init_udp_socket(port);
 
     struct sockaddr_in lastaddr;
+    u_int16_t lastid;
     int lastaddr_valid = 0;
 
     fd_set fds;
@@ -54,14 +55,18 @@ int main(int argc, char *argv[])
 
         if (FD_ISSET(sock, &fds)) {
             struct sockaddr_in addr;
+            u_int8_t type, code;
             u_int16_t id, seq;
             char *data = NULL;
             ssize_t len;
 
-            if (!recv_ping(sock, &addr, &id, &seq, &data, &len))
+            if (!recv_ping(sock, &addr, &type, &code, &id, &seq, &data, &len))
                 goto ignore_ping;
 
-            if ((id ^ seq) != key)
+            if (type != ICMP_DEST_UNREACH || code != 0)
+                goto ignore_ping;
+
+            if (id != lastid)
                 goto ignore_ping;
 
             if (!lastaddr_valid)
@@ -87,8 +92,10 @@ ignore_ping:
                 perror("recvfrom"), abort();
             }
 
-            unsigned short x = rand();
-            send_ping(sock, &host, x, x ^ key, buffer, len);
+            u_int16_t x = rand();
+            send_ping(sock, &host, ICMP_ECHO, 0,
+                    x, x ^ key, buffer, len);
+            lastid = x;
 
             lastaddr_valid = 1;
         }

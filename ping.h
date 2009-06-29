@@ -18,9 +18,9 @@
 void resolv(const char *host, struct sockaddr_in* addr);
 int init_ping_socket(void);
 void bind_ping_socket(int sock, struct sockaddr_in *addr);
-void send_ping(int sock, struct sockaddr_in *addr,
+void send_ping(int sock, struct sockaddr_in *addr, u_int8_t type, u_int8_t code,
         u_int16_t id, u_int16_t seq, char *data, size_t len);
-int recv_ping(int sock, struct sockaddr_in* addr,
+int recv_ping(int sock, struct sockaddr_in* addr, u_int8_t *type, u_int8_t *code,
         u_int16_t *id, u_int16_t *seq, char** data, ssize_t *len);
 
 #endif /* PING_H_INCLUDED */
