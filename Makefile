@@ -17,4 +17,4 @@ include $(allsrc:.c=.d)
 	rm -f $@.$$$$
 
 clean:
-	git clean -f
+	git clean -f -X

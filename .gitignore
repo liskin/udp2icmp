@@ -1,0 +1,5 @@
+*.d
+*.o
+main
+udp2icmpcli
+udp2icmpsrv
