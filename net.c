@@ -12,7 +12,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "checksum.h"
-#include "ping.h"
+#include "net.h"
 
 void resolv(const char *host, struct sockaddr_in* addr)
 {
@@ -24,6 +24,23 @@ void resolv(const char *host, struct sockaddr_in* addr)
     addr->sin_family = AF_INET;
     addr->sin_port = 0;
     memcpy(&addr->sin_addr, he->h_addr, he->h_length);
+}
+
+int init_udp_socket(unsigned short port, int server)
+{
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock == -1)
+        perror("socket"), abort();
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if ((server ? connect : bind)(sock, (const struct sockaddr *) &addr,
+                sizeof(struct sockaddr_in)) == -1)
+        perror(server ? "connect" : "bind"), abort();
+
+    return sock;
 }
 
 int init_ping_socket(void)

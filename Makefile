@@ -1,5 +1,5 @@
 CFLAGS=-Wall -g --std=c99
-sources = ping.c checksum.c
+sources = net.c checksum.c
 
 all: main
 	ln -s -f main udp2icmpsrv
@@ -9,7 +9,7 @@ main: main.o $(sources:.c=.o)
 
 # deps:
 allsrc = $(wildcard *.c)
-include $(allsrc:.c=.d)
+-include $(allsrc:.c=.d)
 %.d: %.c
 	@set -e; rm -f $@; \
 	$(CC) -M $(CPPFLAGS) $< > $@.$$$$; \

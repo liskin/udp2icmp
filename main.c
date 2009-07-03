@@ -4,6 +4,11 @@
  *
  * Copyright (C) 2009  Tomas Janousek <tomi@nomi.cz>
  */
+
+/* To filter out kernel's ECHO replies, add this to iptables:
+ * -A OUTPUT -p icmp -s xx.xx.xx.xx -m icmp --icmp-type 0 -m ttl --ttl-lt 100 -j DROP
+ */
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,28 +16,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <errno.h>
-#include "ping.h"
-
-/* To filter out kernel's ECHO replies, add this to iptables:
- * -A OUTPUT -p icmp -s xx.xx.xx.xx -m icmp --icmp-type 0 -m ttl --ttl-lt 100 -j DROP
- */
-
-int init_udp_socket(unsigned short port, int server)
-{
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock == -1)
-        perror("socket"), abort();
-
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    if ((server ? connect : bind)(sock, (const struct sockaddr *) &addr,
-                sizeof(struct sockaddr_in)) == -1)
-        perror(server ? "connect" : "bind"), abort();
-
-    return sock;
-}
+#include "net.h"
 
 int main(int argc, char *argv[])
 {
