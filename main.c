@@ -117,6 +117,10 @@ ignore_ping:
                 perror("recvfrom"); goto ignore_udp_fail;
             }
 
+            // remember the address for UDP packets
+            if (!server)
+                lastaddr_valid = 1;
+
             // choose an ICMP id
             u_int16_t id;
             if (server) {
@@ -130,12 +134,9 @@ ignore_ping:
                 id = rand();
 
             // send the ICMP packet
-            send_ping(sock, &host, server ? ICMP_ECHOREPLY : ICMP_ECHO, 0,
+            send_ping(sock, server ? &lastaddr : &host,
+		    server ? ICMP_ECHOREPLY : ICMP_ECHO, 0,
                     id, 0, buffer, len + sizeof(long));
-
-            // remember the address for UDP packets
-            if (!server)
-                lastaddr_valid = 1;
         }
 ignore_udp_fail:
 
