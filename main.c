@@ -87,8 +87,13 @@ int main(int argc, char *argv[])
                 lastaddr = addr;
                 id_pool[id_pool_w] = id;
                 id_pool_w = (id_pool_w + 1) % POOLSZ;
-                if (id_pool_w == id_pool_r)
-                    id_pool_r++;
+                if (id_pool_w == id_pool_r) {
+                    // drop this from the pool (and send a reply to drop it
+                    // from firewall's memory as well)
+                    send_ping(sock, &lastaddr, ICMP_ECHOREPLY, 0,
+                            id_pool[id_pool_r], 0, data, sizeof(long));
+                    id_pool_r = (id_pool_r + 1) % POOLSZ;
+                }
             }
 
             // drop empty packets, drop packets we don't know where to send
